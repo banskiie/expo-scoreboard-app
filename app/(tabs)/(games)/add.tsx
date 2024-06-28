@@ -2,6 +2,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native"
@@ -9,10 +10,29 @@ import { useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { Option } from "@/types/all"
 import { FIRESTORE_DB } from "@/firebase"
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore"
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore"
 import { useEffect, useState } from "react"
 import * as ScreenOrientation from "expo-screen-orientation"
 import { Dropdown } from "react-native-element-dropdown"
+import { InitialGameState, GameSchema } from "@/schema/list"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm, Controller } from "react-hook-form"
+import { z } from "zod"
+import BouncyCheckbox from "react-native-bouncy-checkbox"
+import { SafeAreaView } from "react-native-safe-area-context"
+
+const formats: Option[] = [
+  { label: "Best of 1", value: 1 },
+  { label: "Best of 3", value: 3 },
+]
 
 const fetchCategories = (
   setCategories: React.Dispatch<React.SetStateAction<Option[]>>,
@@ -28,7 +48,6 @@ const fetchCategories = (
         label: `${doc.data().category_name} (${doc.data().category_type})`,
         value: `${doc.data().category_name}.${doc.data().category_type}`,
       }))
-      console.log(categories)
       setError(false)
       setCategories(categories)
       setLoading(false)
@@ -41,7 +60,7 @@ const fetchCategories = (
   })
 }
 
-export default () => {
+export default ({ route, navigation }: any) => {
   const router = useRouter()
   const [categories, setCategories] = useState<Option[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -55,6 +74,25 @@ export default () => {
       unsubscribe()
     }
   }, [])
+
+  const form = useForm<z.infer<typeof GameSchema>>({
+    resolver: zodResolver(GameSchema),
+    defaultValues: InitialGameState,
+  })
+
+  const { watch } = form
+
+  const submit = async (payload: z.infer<typeof GameSchema>) => {
+    try {
+      setLoading(true)
+      await addDoc(collection(FIRESTORE_DB, "games"), payload)
+      router.back()
+    } catch (error: any) {
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <View>
@@ -71,13 +109,13 @@ export default () => {
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.6}
-          onPress={() => router.back()}
+          onPress={form.handleSubmit(submit)}
           style={{ ...styles.action, backgroundColor: "#fae466" }}
         >
           <Text style={{ fontWeight: "bold" }}>Submit</Text>
         </TouchableOpacity>
       </View>
-      <ScrollView>
+      <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.form}>
           <View style={styles.form_item}>
             <Text
@@ -85,20 +123,816 @@ export default () => {
             >
               Category
             </Text>
-            <Dropdown
-              style={styles.dropdown}
-              containerStyle={{ marginTop: -24, borderRadius: 12 }}
-              data={categories}
-              mode="default"
-              labelField="label"
-              valueField="value"
-              placeholder="Select Category"
-              onChange={(item: Option) => {
-                // setEmail(item.value)
-                // setPassword(item.value.split("@")[0])
-              }}
+            <Controller
+              control={form.control}
+              name="details.category"
+              render={({ field: { onChange, value, onBlur } }) => (
+                <Dropdown
+                  style={styles.input}
+                  containerStyle={{ marginTop: -24, borderRadius: 12 }}
+                  data={categories}
+                  mode="default"
+                  labelField="label"
+                  valueField="value"
+                  placeholder="Select Category"
+                  value={value as any}
+                  onChange={(item: Option) => onChange(item.value)}
+                  onBlur={onBlur}
+                />
+              )}
             />
           </View>
+          <View style={styles.form_item}>
+            <Text
+              style={{ fontWeight: 600, fontSize: 20, paddingHorizontal: 4 }}
+            >
+              Format (No. of Sets)
+            </Text>
+            <Controller
+              control={form.control}
+              name="details.no_of_sets"
+              render={({ field: { onChange, value, onBlur } }) => (
+                <Dropdown
+                  style={styles.input}
+                  containerStyle={{ marginTop: -24, borderRadius: 12 }}
+                  data={formats}
+                  mode="default"
+                  labelField="label"
+                  valueField="value"
+                  placeholder="Select Format"
+                  value={value as any}
+                  onChange={(item: Option) => {
+                    onChange(item.value)
+                    const generateSet = () => ({
+                      a_score: 0,
+                      b_score: 0,
+                      current_round: 1,
+                      last_team_scored: "",
+                      winner: "",
+                      scoresheet: [
+                        {
+                          team_scored: "",
+                          scored_at: "",
+                          a_switch: true,
+                          b_switch: true,
+                          current_a_score: 0,
+                          current_b_score: 0,
+                          scorer: "",
+                          to_serve: "",
+                          next_serve: "",
+                        },
+                      ],
+                      switch: false,
+                    })
+                    const sets = Array.from(
+                      { length: +item.value },
+                      (_, i) => ({
+                        [`set_${i + 1}`]: generateSet(),
+                      })
+                    ).reduce((acc, cur) => ({ ...acc, ...cur }), {})
+
+                    form.setValue("sets", sets as any)
+                  }}
+                  onBlur={onBlur}
+                />
+              )}
+            />
+            {form.formState.errors.details?.no_of_sets && (
+              <Text style={{ color: "red" }}>
+                {form.formState.errors.details.no_of_sets.message}
+              </Text>
+            )}
+          </View>
+          <View style={styles.form_item}>
+            <Text
+              style={{ fontWeight: 600, fontSize: 20, paddingHorizontal: 4 }}
+            >
+              Winning Score
+            </Text>
+            <Controller
+              control={form.control}
+              name="details.max_score"
+              render={({ field: { onChange, value, onBlur } }) => (
+                <TextInput
+                  style={styles.input}
+                  value={value.toString()}
+                  onChangeText={(text) => onChange(text)}
+                  onBlur={onBlur}
+                  keyboardType="numeric"
+                />
+              )}
+            />
+            {form.formState.errors.details?.max_score && (
+              <Text style={{ color: "red" }}>
+                {form.formState.errors.details.max_score.message}
+              </Text>
+            )}
+          </View>
+          <View style={styles.form_item}>
+            <Controller
+              control={form.control}
+              name="details.plus_two_rule"
+              render={({ field: { onChange, value, onBlur } }) => (
+                <View
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                  }}
+                >
+                  <BouncyCheckbox
+                    size={22}
+                    fillColor="black"
+                    unFillColor="#FFFFFF"
+                    style={{ marginVertical: 5, marginLeft: 10 }}
+                    isChecked={value}
+                    iconStyle={{ borderColor: "black" }}
+                    innerIconStyle={{ borderWidth: 2 }}
+                    onPress={(isChecked: boolean) => {
+                      onChange(isChecked)
+                    }}
+                  />
+                  <Text
+                    style={{
+                      marginTop: 4,
+                      fontWeight: 600,
+                      fontSize: 18,
+                    }}
+                  >
+                    Plus Two Rule?
+                  </Text>
+                </View>
+              )}
+            />
+            {form.formState.errors.details?.plus_two_rule && (
+              <Text style={{ color: "red" }}>
+                {form.formState.errors.details.plus_two_rule.message}
+              </Text>
+            )}
+          </View>
+          {watch("details.plus_two_rule") && (
+            <>
+              <View
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                }}
+              >
+                <BouncyCheckbox
+                  size={22}
+                  fillColor="black"
+                  unFillColor="#FFFFFF"
+                  style={{ marginVertical: 5, marginLeft: 10 }}
+                  iconStyle={{ borderColor: "black" }}
+                  innerIconStyle={{ borderWidth: 2 }}
+                  onPress={(isChecked: boolean) => {
+                    form.setValue(
+                      "details.plus_two_score",
+                      isChecked ? 9999 : watch("details.max_score") + 9
+                    )
+                  }}
+                />
+                <Text
+                  style={{
+                    marginTop: 4,
+                    fontWeight: 600,
+                    fontSize: 18,
+                  }}
+                >
+                  No Limit
+                </Text>
+              </View>
+              {watch("details.plus_two_score") < 9999 && (
+                <View style={styles.form_item}>
+                  <Text
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 20,
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    Final Max Score
+                  </Text>
+                  <Controller
+                    control={form.control}
+                    name="details.plus_two_score"
+                    render={({ field: { onChange, value, onBlur } }) => (
+                      <TextInput
+                        readOnly={watch("details.plus_two_score") >= 9999}
+                        style={styles.input}
+                        value={value.toString()}
+                        onChangeText={(text) => onChange(text)}
+                        onBlur={onBlur}
+                        keyboardType="numeric"
+                      />
+                    )}
+                  />
+                  {form.formState.errors.details?.plus_two_score && (
+                    <Text style={{ color: "red" }}>
+                      {form.formState.errors.details.plus_two_score.message}
+                    </Text>
+                  )}
+                </View>
+              )}
+              <Text style={{ textAlign: "center" }}>
+                * PLUS TWO: If the score is {watch("details.max_score") - 1}-
+                {watch("details.max_score") - 1}, a side must win by two clear
+                points to win the game.
+                {watch("details.plus_two_score") >= 9999 &&
+                  `If it reaches ${watch("details.plus_two_score") - 1}-${
+                    watch("details.plus_two_score") - 1
+                  }, the first to get their 
+                  ${watch("details.plus_two_score")} points wins.`}
+              </Text>
+            </>
+          )}
+          {!!watch("details.category") && (
+            <>
+              <View style={styles.form_item}>
+                <View style={{ display: "flex", flexDirection: "row" }}>
+                  <Text
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 20,
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    Player 1 (Team A)
+                  </Text>
+                  <View style={styles.form_item}>
+                    <Controller
+                      control={form.control}
+                      name="players.team_a.player_1.use_nickname"
+                      render={({ field: { onChange, value, onBlur } }) => (
+                        <View
+                          style={{
+                            display: "flex",
+                            flexDirection: "row",
+                          }}
+                        >
+                          <BouncyCheckbox
+                            size={20}
+                            fillColor="black"
+                            unFillColor="#FFFFFF"
+                            style={{ marginVertical: 5, marginLeft: 10 }}
+                            isChecked={value}
+                            iconStyle={{ borderColor: "black" }}
+                            innerIconStyle={{ borderWidth: 2 }}
+                            onPress={(isChecked: boolean) => {
+                              onChange(isChecked)
+                            }}
+                          />
+                          <Text
+                            style={{
+                              marginTop: 4,
+                              fontWeight: 600,
+                              fontSize: 18,
+                              marginLeft: -10,
+                            }}
+                          >
+                            Use nickname?
+                          </Text>
+                        </View>
+                      )}
+                    />
+                  </View>
+                </View>
+                {watch("players.team_a.player_1.use_nickname") ? (
+                  <Controller
+                    control={form.control}
+                    name="players.team_a.player_1.nickname"
+                    render={({ field: { onChange, value, onBlur } }) => (
+                      <>
+                        <Text
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 20,
+                            paddingHorizontal: 4,
+                            color: "#3b3b3b",
+                          }}
+                        >
+                          Nickname
+                        </Text>
+                        <TextInput
+                          style={styles.input}
+                          value={value}
+                          onChangeText={(text) => onChange(text)}
+                          onBlur={onBlur}
+                        />
+                      </>
+                    )}
+                  />
+                ) : (
+                  <>
+                    <Controller
+                      control={form.control}
+                      name="players.team_a.player_1.first_name"
+                      render={({ field: { onChange, value, onBlur } }) => (
+                        <>
+                          <Text
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 20,
+                              paddingHorizontal: 4,
+                              color: "#3b3b3b",
+                            }}
+                          >
+                            First Name
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            value={value}
+                            onChangeText={(text) => onChange(text)}
+                            onBlur={onBlur}
+                          />
+                        </>
+                      )}
+                    />
+                    {form.formState.errors.players?.team_a?.player_1
+                      ?.first_name && (
+                      <Text style={{ color: "red" }}>
+                        {
+                          form.formState.errors.players?.team_a?.player_1
+                            .first_name.message
+                        }
+                      </Text>
+                    )}
+                    <Controller
+                      control={form.control}
+                      name="players.team_a.player_1.last_name"
+                      render={({ field: { onChange, value, onBlur } }) => (
+                        <>
+                          <Text
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 20,
+                              paddingHorizontal: 4,
+                              color: "#3b3b3b",
+                            }}
+                          >
+                            Last Name
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            value={value}
+                            onChangeText={(text) => onChange(text)}
+                            onBlur={onBlur}
+                          />
+                        </>
+                      )}
+                    />
+                    {form.formState.errors.players?.team_a?.player_1
+                      ?.last_name && (
+                      <Text style={{ color: "red" }}>
+                        {
+                          form.formState.errors.players?.team_a?.player_1
+                            .last_name.message
+                        }
+                      </Text>
+                    )}
+                  </>
+                )}
+              </View>
+              {watch("details.category").split(".")[1] == "doubles" && (
+                <View style={styles.form_item}>
+                  <View style={{ display: "flex", flexDirection: "row" }}>
+                    <Text
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 20,
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      Player 2 (Team A)
+                    </Text>
+                    <View style={styles.form_item}>
+                      <Controller
+                        control={form.control}
+                        name="players.team_a.player_2.use_nickname"
+                        render={({ field: { onChange, value, onBlur } }) => (
+                          <View
+                            style={{
+                              display: "flex",
+                              flexDirection: "row",
+                            }}
+                          >
+                            <BouncyCheckbox
+                              size={20}
+                              fillColor="black"
+                              unFillColor="#FFFFFF"
+                              style={{ marginVertical: 5, marginLeft: 10 }}
+                              isChecked={value}
+                              iconStyle={{ borderColor: "black" }}
+                              innerIconStyle={{ borderWidth: 2 }}
+                              onPress={(isChecked: boolean) => {
+                                onChange(isChecked)
+                              }}
+                            />
+                            <Text
+                              style={{
+                                marginTop: 4,
+                                fontWeight: 600,
+                                fontSize: 18,
+                                marginLeft: -10,
+                              }}
+                            >
+                              Use nickname?
+                            </Text>
+                          </View>
+                        )}
+                      />
+                    </View>
+                  </View>
+                  {watch("players.team_a.player_2.use_nickname") ? (
+                    <Controller
+                      control={form.control}
+                      name="players.team_a.player_2.nickname"
+                      render={({ field: { onChange, value, onBlur } }) => (
+                        <>
+                          <Text
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 20,
+                              paddingHorizontal: 4,
+                              color: "#3b3b3b",
+                            }}
+                          >
+                            Nickname
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            value={value}
+                            onChangeText={(text) => onChange(text)}
+                            onBlur={onBlur}
+                          />
+                        </>
+                      )}
+                    />
+                  ) : (
+                    <>
+                      <Controller
+                        control={form.control}
+                        name="players.team_a.player_2.first_name"
+                        render={({ field: { onChange, value, onBlur } }) => (
+                          <>
+                            <Text
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 20,
+                                paddingHorizontal: 4,
+                                color: "#3b3b3b",
+                              }}
+                            >
+                              First Name
+                            </Text>
+                            <TextInput
+                              style={styles.input}
+                              value={value}
+                              onChangeText={(text) => onChange(text)}
+                              onBlur={onBlur}
+                            />
+                          </>
+                        )}
+                      />
+                      {form.formState.errors.players?.team_a?.player_2
+                        ?.first_name && (
+                        <Text style={{ color: "red" }}>
+                          {
+                            form.formState.errors.players?.team_a?.player_2
+                              .first_name.message
+                          }
+                        </Text>
+                      )}
+                      <Controller
+                        control={form.control}
+                        name="players.team_a.player_2.last_name"
+                        render={({ field: { onChange, value, onBlur } }) => (
+                          <>
+                            <Text
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 20,
+                                paddingHorizontal: 4,
+                                color: "#3b3b3b",
+                              }}
+                            >
+                              Last Name
+                            </Text>
+                            <TextInput
+                              style={styles.input}
+                              value={value}
+                              onChangeText={(text) => onChange(text)}
+                              onBlur={onBlur}
+                            />
+                          </>
+                        )}
+                      />
+                      {form.formState.errors.players?.team_a?.player_2
+                        ?.last_name && (
+                        <Text style={{ color: "red" }}>
+                          {
+                            form.formState.errors.players?.team_a?.player_2
+                              .last_name.message
+                          }
+                        </Text>
+                      )}
+                    </>
+                  )}
+                </View>
+              )}
+              <View style={styles.form_item}>
+                <View style={{ display: "flex", flexDirection: "row" }}>
+                  <Text
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 20,
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    Player 1 (Team B)
+                  </Text>
+                  <View style={styles.form_item}>
+                    <Controller
+                      control={form.control}
+                      name="players.team_b.player_1.use_nickname"
+                      render={({ field: { onChange, value, onBlur } }) => (
+                        <View
+                          style={{
+                            display: "flex",
+                            flexDirection: "row",
+                          }}
+                        >
+                          <BouncyCheckbox
+                            size={20}
+                            fillColor="black"
+                            unFillColor="#FFFFFF"
+                            style={{ marginVertical: 5, marginLeft: 10 }}
+                            isChecked={value}
+                            iconStyle={{ borderColor: "black" }}
+                            innerIconStyle={{ borderWidth: 2 }}
+                            onPress={(isChecked: boolean) => {
+                              onChange(isChecked)
+                            }}
+                          />
+                          <Text
+                            style={{
+                              marginTop: 4,
+                              fontWeight: 600,
+                              fontSize: 18,
+                              marginLeft: -10,
+                            }}
+                          >
+                            Use nickname?
+                          </Text>
+                        </View>
+                      )}
+                    />
+                  </View>
+                </View>
+                {watch("players.team_b.player_1.use_nickname") ? (
+                  <Controller
+                    control={form.control}
+                    name="players.team_b.player_1.nickname"
+                    render={({ field: { onChange, value, onBlur } }) => (
+                      <>
+                        <Text
+                          style={{
+                            fontWeight: 600,
+                            fontSize: 20,
+                            paddingHorizontal: 4,
+                            color: "#3b3b3b",
+                          }}
+                        >
+                          Nickname
+                        </Text>
+                        <TextInput
+                          style={styles.input}
+                          value={value}
+                          onChangeText={(text) => onChange(text)}
+                          onBlur={onBlur}
+                        />
+                      </>
+                    )}
+                  />
+                ) : (
+                  <>
+                    <Controller
+                      control={form.control}
+                      name="players.team_b.player_1.first_name"
+                      render={({ field: { onChange, value, onBlur } }) => (
+                        <>
+                          <Text
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 20,
+                              paddingHorizontal: 4,
+                              color: "#3b3b3b",
+                            }}
+                          >
+                            First Name
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            value={value}
+                            onChangeText={(text) => onChange(text)}
+                            onBlur={onBlur}
+                          />
+                        </>
+                      )}
+                    />
+                    {form.formState.errors.players?.team_b?.player_1
+                      ?.first_name && (
+                      <Text style={{ color: "red" }}>
+                        {
+                          form.formState.errors.players?.team_b?.player_1
+                            .first_name.message
+                        }
+                      </Text>
+                    )}
+                    <Controller
+                      control={form.control}
+                      name="players.team_b.player_1.last_name"
+                      render={({ field: { onChange, value, onBlur } }) => (
+                        <>
+                          <Text
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 20,
+                              paddingHorizontal: 4,
+                              color: "#3b3b3b",
+                            }}
+                          >
+                            Last Name
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            value={value}
+                            onChangeText={(text) => onChange(text)}
+                            onBlur={onBlur}
+                          />
+                        </>
+                      )}
+                    />
+                    {form.formState.errors.players?.team_b?.player_1
+                      ?.last_name && (
+                      <Text style={{ color: "red" }}>
+                        {
+                          form.formState.errors.players?.team_b?.player_1
+                            .last_name.message
+                        }
+                      </Text>
+                    )}
+                  </>
+                )}
+              </View>
+              {watch("details.category").split(".")[1] == "doubles" && (
+                <View style={styles.form_item}>
+                  <View style={{ display: "flex", flexDirection: "row" }}>
+                    <Text
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 20,
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      Player 2 (Team B)
+                    </Text>
+                    <View style={styles.form_item}>
+                      <Controller
+                        control={form.control}
+                        name="players.team_b.player_2.use_nickname"
+                        render={({ field: { onChange, value, onBlur } }) => (
+                          <View
+                            style={{
+                              display: "flex",
+                              flexDirection: "row",
+                            }}
+                          >
+                            <BouncyCheckbox
+                              size={20}
+                              fillColor="black"
+                              unFillColor="#FFFFFF"
+                              style={{ marginVertical: 5, marginLeft: 10 }}
+                              isChecked={value}
+                              iconStyle={{ borderColor: "black" }}
+                              innerIconStyle={{ borderWidth: 2 }}
+                              onPress={(isChecked: boolean) => {
+                                onChange(isChecked)
+                              }}
+                            />
+                            <Text
+                              style={{
+                                marginTop: 4,
+                                fontWeight: 600,
+                                fontSize: 18,
+                                marginLeft: -10,
+                              }}
+                            >
+                              Use nickname?
+                            </Text>
+                          </View>
+                        )}
+                      />
+                    </View>
+                  </View>
+                  {watch("players.team_b.player_2.use_nickname") ? (
+                    <Controller
+                      control={form.control}
+                      name="players.team_b.player_2.nickname"
+                      render={({ field: { onChange, value, onBlur } }) => (
+                        <>
+                          <Text
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 20,
+                              paddingHorizontal: 4,
+                              color: "#3b3b3b",
+                            }}
+                          >
+                            Nickname
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            value={value}
+                            onChangeText={(text) => onChange(text)}
+                            onBlur={onBlur}
+                          />
+                        </>
+                      )}
+                    />
+                  ) : (
+                    <>
+                      <Controller
+                        control={form.control}
+                        name="players.team_b.player_2.first_name"
+                        render={({ field: { onChange, value, onBlur } }) => (
+                          <>
+                            <Text
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 20,
+                                paddingHorizontal: 4,
+                                color: "#3b3b3b",
+                              }}
+                            >
+                              First Name
+                            </Text>
+                            <TextInput
+                              style={styles.input}
+                              value={value}
+                              onChangeText={(text) => onChange(text)}
+                              onBlur={onBlur}
+                            />
+                          </>
+                        )}
+                      />
+                      {form.formState.errors.players?.team_b?.player_2
+                        ?.first_name && (
+                        <Text style={{ color: "red" }}>
+                          {
+                            form.formState.errors.players?.team_b?.player_2
+                              .first_name.message
+                          }
+                        </Text>
+                      )}
+                      <Controller
+                        control={form.control}
+                        name="players.team_b.player_2.last_name"
+                        render={({ field: { onChange, value, onBlur } }) => (
+                          <>
+                            <Text
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 20,
+                                paddingHorizontal: 4,
+                                color: "#3b3b3b",
+                              }}
+                            >
+                              Last Name
+                            </Text>
+                            <TextInput
+                              style={styles.input}
+                              value={value}
+                              onChangeText={(text) => onChange(text)}
+                              onBlur={onBlur}
+                            />
+                          </>
+                        )}
+                      />
+                      {form.formState.errors.players?.team_b?.player_2
+                        ?.last_name && (
+                        <Text style={{ color: "red" }}>
+                          {
+                            form.formState.errors.players?.team_b?.player_2
+                              .last_name.message
+                          }
+                        </Text>
+                      )}
+                    </>
+                  )}
+                </View>
+              )}
+            </>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -106,7 +940,10 @@ export default () => {
 }
 
 const styles = StyleSheet.create({
-  dropdown: {
+  scroll: {
+    paddingBottom: 60,
+  },
+  input: {
     borderRadius: 12,
     backgroundColor: "#E6E6E6",
     height: 50,

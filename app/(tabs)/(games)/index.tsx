@@ -8,7 +8,7 @@ export default () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.add} onPress={() => router.push("/add")}>
+      <TouchableOpacity style={styles.add} onPress={() => router.push("add")}>
         <View style={styles.add_view}>
           <Ionicons style={{ fontSize: 18 }} name="add-circle-outline" />
           <Text style={{ fontWeight: 600, fontSize: 18 }}>New Game</Text>
