@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { FIREBASE_AUTH } from "@/firebase"
+import { useAuthStore } from "@/store/auth"
 
 const RoundSchema = z.object({
   current_a_score: z.number(),
@@ -36,7 +36,7 @@ const DetailsSchema = z.object({
   category: z.any(),
   group_no: z.string(),
   no_of_sets: z.union([z.literal(1), z.literal(3)]),
-  max_score: z.union([z.literal(21), z.literal(31)]),
+  max_score: z.number(),
   game_winner: z.string(),
   shuttles_used: z.number(),
   playing_set: z.union([z.literal(1), z.literal(2), z.literal(3)]),
@@ -93,7 +93,7 @@ export const InitialGameState = GameSchema.parse({
   details: {
     created_date: Date.now(),
     game_no: "",
-    court: FIREBASE_AUTH.currentUser?.displayName ?? "",
+    court: useAuthStore.getState().user?.displayName ?? "",
     category: "",
     group_no: "",
     no_of_sets: 1,
