@@ -48,7 +48,7 @@ const fetchCourts = (
 }
 
 export default () => {
-  const { updateAuth } = useAuthStore()
+  const { updateAuth, setUser } = useAuthStore()
   const [email, setEmail] = useState<string>("")
   const [password, setPassword] = useState<string>("")
   const [courts, setCourts] = useState<Option[]>([])
@@ -68,7 +68,12 @@ export default () => {
     setLoading(true)
     setError(false)
     try {
-      await signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
+      const test = await signInWithEmailAndPassword(
+        FIREBASE_AUTH,
+        email,
+        password
+      )
+      setUser(test.user)
       updateAuth(true)
     } catch (error: unknown) {
       setError(true)
@@ -102,7 +107,7 @@ export default () => {
           labelField="label"
           valueField="value"
           placeholder="Select Court"
-          onChange={(court: Option) => {
+          onChange={(court: any) => {
             setEmail(court.value)
             setPassword(court.value.split("@")[0])
           }}

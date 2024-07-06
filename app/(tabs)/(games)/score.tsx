@@ -18,12 +18,7 @@ const IconWithLabel = ({ name, label, color, size }: IconWithLabelProps) => (
 )
 
 export default () => {
-  const [hideTab, setHideTab] = useState<boolean>(false)
   const pathname = usePathname()
-
-  useEffect(() => {
-    setHideTab(pathname === "/score")
-  }, [pathname])
 
   return (
     <Tabs
@@ -32,7 +27,6 @@ export default () => {
         tabBarShowLabel: false,
         tabBarStyle: {
           height: 80,
-          display: hideTab ? "none" : "flex",
         },
         headerTitleStyle: styles.title,
         headerStatusBarHeight: StatusBar.currentHeight,

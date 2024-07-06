@@ -27,7 +27,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { z } from "zod"
 import BouncyCheckbox from "react-native-bouncy-checkbox"
-import { SafeAreaView } from "react-native-safe-area-context"
 
 const formats: Option[] = [
   { label: "Best of 1", value: 1 },
@@ -60,7 +59,7 @@ const fetchCategories = (
   })
 }
 
-export default ({ route, navigation }: any) => {
+export default () => {
   const router = useRouter()
   const [categories, setCategories] = useState<Option[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -69,6 +68,7 @@ export default ({ route, navigation }: any) => {
   useEffect(() => {
     const unsubscribe = fetchCategories(setCategories, setLoading, setError)
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT)
+
     return () => {
       ScreenOrientation.unlockAsync()
       unsubscribe()
@@ -216,7 +216,7 @@ export default ({ route, navigation }: any) => {
                 <TextInput
                   style={styles.input}
                   value={value.toString()}
-                  onChangeText={(text) => onChange(text)}
+                  onChangeText={(value) => onChange(+value)}
                   onBlur={onBlur}
                   keyboardType="numeric"
                 />
@@ -320,7 +320,7 @@ export default ({ route, navigation }: any) => {
                         readOnly={watch("details.plus_two_score") >= 9999}
                         style={styles.input}
                         value={value.toString()}
-                        onChangeText={(text) => onChange(text)}
+                        onChangeText={(value) => onChange(+value)}
                         onBlur={onBlur}
                         keyboardType="numeric"
                       />
