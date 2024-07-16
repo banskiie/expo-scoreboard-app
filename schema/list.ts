@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { useAuthStore } from "@/store/auth"
 
 const RoundSchema = z.object({
   current_a_score: z.number(),
@@ -93,7 +92,7 @@ export const InitialGameState = GameSchema.parse({
   details: {
     created_date: Date.now(),
     game_no: "",
-    court: useAuthStore.getState().user?.displayName ?? "",
+    court: "",
     category: "",
     group_no: "",
     no_of_sets: 1,

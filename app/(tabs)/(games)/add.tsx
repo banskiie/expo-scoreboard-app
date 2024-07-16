@@ -27,6 +27,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, Controller } from "react-hook-form"
 import { z } from "zod"
 import BouncyCheckbox from "react-native-bouncy-checkbox"
+import { useAuthStore } from "@/store/auth"
 
 const formats: Option[] = [
   { label: "Best of 1", value: 1 },
@@ -60,6 +61,7 @@ const fetchCategories = (
 }
 
 export default () => {
+  const { user } = useAuthStore()
   const router = useRouter()
   const [categories, setCategories] = useState<Option[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -77,7 +79,13 @@ export default () => {
 
   const form = useForm<z.infer<typeof GameSchema>>({
     resolver: zodResolver(GameSchema),
-    defaultValues: InitialGameState,
+    defaultValues: {
+      ...InitialGameState,
+      details: {
+        ...InitialGameState.details,
+        court: user?.displayName || "",
+      },
+    },
   })
 
   const { watch } = form
@@ -117,6 +125,26 @@ export default () => {
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.form}>
+          <View style={{ ...styles.form_item }}>
+            <Text
+              style={{ fontWeight: 600, fontSize: 20, paddingHorizontal: 4 }}
+            >
+              Court
+            </Text>
+            <Controller
+              control={form.control}
+              name="details.court"
+              render={({ field: { onChange, value, onBlur } }) => (
+                <TextInput
+                  readOnly
+                  style={styles.input}
+                  value={user?.displayName}
+                  onBlur={onBlur}
+                  keyboardType="numeric"
+                />
+              )}
+            />
+          </View>
           <View style={styles.form_item}>
             <Text
               style={{ fontWeight: 600, fontSize: 20, paddingHorizontal: 4 }}

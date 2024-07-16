@@ -30,14 +30,13 @@ export default () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 10 },
   add: {
-    width: "100%",
     backgroundColor: "#fae466",
-    paddingVertical: 12,
+    height: 50,
     borderRadius: 12,
-    flexDirection: "row",
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
     elevation: 2,
+    marginVertical: 6,
   },
 })

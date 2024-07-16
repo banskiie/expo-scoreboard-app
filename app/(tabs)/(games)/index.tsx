@@ -55,14 +55,6 @@ const fetchGames = (
   })
 }
 
-type ItemProps = { title: string }
-
-const Item = ({ title }: ItemProps) => (
-  <View>
-    <Text>{title}</Text>
-  </View>
-)
-
 export default () => {
   const router = useRouter()
   const [games, setGames] = useState<any[]>([])
@@ -111,7 +103,17 @@ export default () => {
         <FlatList
           data={games}
           renderItem={({ item }) => (
-            <Pressable style={styles.card} onPress={() => router.push("score")}>
+            <Pressable
+              style={styles.card}
+              onPress={() =>
+                router.push({
+                  pathname: "score",
+                  params: {
+                    id: item.id,
+                  },
+                })
+              }
+            >
               <View style={styles.card_header}>
                 <Text
                   style={{ textTransform: "uppercase", fontWeight: "bold" }}
