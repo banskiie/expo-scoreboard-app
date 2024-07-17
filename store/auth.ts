@@ -20,6 +20,7 @@ export const useAuthStore = create<AuthStore>()(
       updateAuth: (status: boolean) => set(() => ({ isAuth: status })),
       logout: () => {
         FIREBASE_AUTH.signOut()
+        AsyncStorage.clear()
         set(() => ({ isAuth: false, user: null }))
       },
     }),

@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
-import { useRouter } from "expo-router"
+import { useLocalSearchParams, useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { Option } from "@/types/all"
 import { FIRESTORE_DB } from "@/firebase"
@@ -18,6 +18,7 @@ import {
   addDoc,
   doc,
   updateDoc,
+  DocumentSnapshot,
 } from "firebase/firestore"
 import { useEffect, useState } from "react"
 import * as ScreenOrientation from "expo-screen-orientation"
@@ -64,8 +65,10 @@ export default () => {
   const { user } = useAuthStore()
   const router = useRouter()
   const [categories, setCategories] = useState<Option[]>([])
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<boolean>(false)
+  const { id } = useLocalSearchParams()
 
   useEffect(() => {
     const unsubscribe = fetchCategories(setCategories, setLoading, setError)
@@ -77,9 +80,24 @@ export default () => {
     }
   }, [])
 
+  useEffect(() => {
+    if (id) {
+      const ref = doc(FIRESTORE_DB, "games", id as string)
+      const sub = onSnapshot(ref, {
+        next: (snapshot: DocumentSnapshot) => {
+          if (snapshot.exists()) {
+            setData(snapshot.data())
+          }
+        },
+      })
+
+      return () => sub()
+    }
+  }, [id])
+
   const form = useForm<z.infer<typeof GameSchema>>({
     resolver: zodResolver(GameSchema),
-    defaultValues: {
+    values: data ?? {
       ...InitialGameState,
       details: {
         ...InitialGameState.details,
@@ -93,7 +111,9 @@ export default () => {
   const submit = async (payload: z.infer<typeof GameSchema>) => {
     try {
       setLoading(true)
-      await addDoc(collection(FIRESTORE_DB, "games"), payload)
+      id
+        ? await updateDoc(doc(FIRESTORE_DB, "games", id as string), payload)
+        : await addDoc(collection(FIRESTORE_DB, "games"), payload)
       router.back()
     } catch (error: any) {
       console.error(error)

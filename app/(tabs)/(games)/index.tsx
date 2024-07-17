@@ -21,6 +21,8 @@ import {
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/auth"
 
+const BACKGROUND_COLOR = "#f2f0ef"
+
 const fetchGames = (
   setGames: React.Dispatch<React.SetStateAction<any>>,
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
@@ -52,13 +54,16 @@ const fetchGames = (
       setLoading(false)
       setError(true)
     },
+    complete: () => {
+      setLoading(false)
+    },
   })
 }
 
 export default () => {
   const router = useRouter()
   const [games, setGames] = useState<any[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<boolean>(false)
   const { user } = useAuthStore()
 
@@ -89,6 +94,14 @@ export default () => {
     }
   }
 
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size={200} color="black" />
+      </View>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity style={styles.add} onPress={() => router.push("add")}>
@@ -97,138 +110,165 @@ export default () => {
           <Text style={{ fontWeight: 600, fontSize: 18 }}>New Game</Text>
         </View>
       </TouchableOpacity>
-      {loading ? (
-        <ActivityIndicator />
-      ) : (
-        <FlatList
-          data={games}
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.card}
-              onPress={() =>
-                router.push({
-                  pathname: "score",
-                  params: {
-                    id: item.id,
-                  },
-                })
-              }
-            >
-              <View style={styles.card_header}>
-                <Text
-                  style={{ textTransform: "uppercase", fontWeight: "bold" }}
-                >
-                  {item.details.category.split(".")[0]}{" "}
-                  {item.details.category.split(".")[1]}
-                </Text>
-                <View style={styles.rounds}>
+      <FlatList
+        data={games}
+        renderItem={({ item }) => (
+          <Pressable
+            style={styles.card}
+            onPress={() =>
+              router.push({
+                pathname: "score",
+                params: {
+                  id: item.id,
+                },
+              })
+            }
+          >
+            <View style={styles.card_header}>
+              <Text style={{ textTransform: "uppercase", fontWeight: "bold" }}>
+                {item.details.category.split(".")[0]}{" "}
+                {item.details.category.split(".")[1]}
+              </Text>
+              <View style={styles.rounds}>
+                {Array.from({ length: item.details.no_of_sets }).map(
+                  (_, index) => (
+                    <View style={styles.round} key={index}>
+                      <Text style={styles.round_no}>{index + 1}</Text>
+                    </View>
+                  )
+                )}
+              </View>
+            </View>
+            <View style={styles.score_container}>
+              <View style={styles.team_container}>
+                <View style={styles.teams}>
+                  {/* Team A */}
+                  <Text style={styles.player}>
+                    {item.players.team_a.player_1.use_nickname
+                      ? item.players.team_a.player_1.nickname
+                      : `${item.players.team_a.player_1.first_name} ${item.players.team_a.player_1.last_name}`}
+                  </Text>
+                  {item.details.category.split(".")[1] === "doubles" && (
+                    <Text style={styles.player}>
+                      {item.players.team_a.player_2.use_nickname
+                        ? item.players.team_a.player_2.nickname
+                        : `${item.players.team_a.player_2.first_name} ${item.players.team_a.player_2.last_name}`}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.scores}>
+                  <View
+                    style={{
+                      ...styles.score_card,
+                      backgroundColor: BACKGROUND_COLOR,
+                      marginRight: 20,
+                      borderWidth: 1,
+                      borderColor: "#2c5f34",
+                    }}
+                  >
+                    <Text style={styles.score}>
+                      {
+                        Object.values(item?.sets).filter(
+                          (set: any) => set.winner === "a"
+                        ).length
+                      }
+                    </Text>
+                  </View>
                   {Array.from({ length: item.details.no_of_sets }).map(
                     (_, index) => (
-                      <View style={styles.round} key={index}>
-                        <Text style={styles.round_no}>{index + 1}</Text>
+                      <View
+                        style={{
+                          ...styles.score_card,
+                          backgroundColor:
+                            item.time.start &&
+                            index + 1 == item.details.playing_set
+                              ? "#e0f0e3"
+                              : BACKGROUND_COLOR,
+                        }}
+                        key={index}
+                      >
+                        <Text style={styles.score}>
+                          {item.sets[`set_${index + 1}`].a_score}
+                        </Text>
                       </View>
                     )
                   )}
                 </View>
               </View>
-              <View style={styles.score_container}>
-                <View style={styles.team_container}>
-                  <View style={styles.teams}>
-                    {/* Team A */}
+              {/* Divider */}
+              <View style={styles.divider}></View>
+              <View style={styles.team_container}>
+                <View style={styles.teams}>
+                  {/* Team B */}
+                  <Text style={styles.player}>
+                    {item.players.team_b.player_1.use_nickname
+                      ? item.players.team_b.player_1.nickname
+                      : `${item.players.team_b.player_1.first_name} ${item.players.team_b.player_1.last_name}`}
+                  </Text>
+                  {item.details.category.split(".")[1] === "doubles" && (
                     <Text style={styles.player}>
-                      {item.players.team_a.player_1.use_nickname
-                        ? item.players.team_a.player_1.nickname
-                        : `${item.players.team_a.player_1.first_name} ${item.players.team_a.player_1.last_name}`}
+                      {item.players.team_b.player_2.use_nickname
+                        ? item.players.team_b.player_2.nickname
+                        : `${item.players.team_b.player_2.first_name} ${item.players.team_b.player_2.last_name}`}
                     </Text>
-                    {item.details.category.split(".")[1] === "doubles" && (
-                      <Text style={styles.player}>
-                        {item.players.team_a.player_2.use_nickname
-                          ? item.players.team_a.player_2.nickname
-                          : `${item.players.team_a.player_2.first_name} ${item.players.team_a.player_2.last_name}`}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.scores}>
-                    {Array.from({ length: item.details.no_of_sets }).map(
-                      (_, index) => (
-                        <View
-                          style={{
-                            ...styles.score_card,
-                            backgroundColor:
-                              item.time.start &&
-                              index + 1 == item.details.playing_set
-                                ? "#e0f0e3"
-                                : "lightgrey",
-                          }}
-                          key={index}
-                        >
-                          <Text style={styles.score}>
-                            {item.sets[`set_${index + 1}`].a_score}
-                          </Text>
-                        </View>
-                      )
-                    )}
-                  </View>
+                  )}
                 </View>
-                {/* Divider */}
-                <View style={styles.divider}></View>
-                <View style={styles.team_container}>
-                  <View style={styles.teams}>
-                    {/* Team B */}
-                    <Text style={styles.player}>
-                      {item.players.team_b.player_1.use_nickname
-                        ? item.players.team_b.player_1.nickname
-                        : `${item.players.team_b.player_1.first_name} ${item.players.team_b.player_1.last_name}`}
+                <View style={styles.scores}>
+                  <View
+                    style={{
+                      ...styles.score_card,
+                      backgroundColor: BACKGROUND_COLOR,
+                      marginRight: 20,
+                      borderWidth: 1,
+                      borderColor: "#ff5c00",
+                    }}
+                  >
+                    <Text style={styles.score}>
+                      {
+                        Object.values(item?.sets).filter(
+                          (set: any) => set.winner === "b"
+                        ).length
+                      }
                     </Text>
-                    {item.details.category.split(".")[1] === "doubles" && (
-                      <Text style={styles.player}>
-                        {item.players.team_b.player_2.use_nickname
-                          ? item.players.team_b.player_2.nickname
-                          : `${item.players.team_b.player_2.first_name} ${item.players.team_b.player_2.last_name}`}
-                      </Text>
-                    )}
                   </View>
-                  <View style={styles.scores}>
-                    {Array.from({ length: item.details.no_of_sets }).map(
-                      (_, index) => (
-                        <View
-                          style={{
-                            ...styles.score_card,
-                            backgroundColor:
-                              item.time.start &&
-                              index + 1 == item.details.playing_set
-                                ? "#FAC898"
-                                : "lightgrey",
-                          }}
-                          key={index}
-                        >
-                          <Text style={styles.score}>
-                            {item.sets[`set_${index + 1}`].b_score}
-                          </Text>
-                        </View>
-                      )
-                    )}
-                  </View>
+
+                  {Array.from({ length: item.details.no_of_sets }).map(
+                    (_, index) => (
+                      <View
+                        style={{
+                          ...styles.score_card,
+                          backgroundColor:
+                            item.time.start &&
+                            index + 1 == item.details.playing_set
+                              ? "#FAC898"
+                              : BACKGROUND_COLOR,
+                        }}
+                        key={index}
+                      >
+                        <Text style={styles.score}>
+                          {item.sets[`set_${index + 1}`].b_score}
+                        </Text>
+                      </View>
+                    )
+                  )}
                 </View>
               </View>
-              <View style={styles.footer}>
-                <Text style={styles.best}>
-                  Best of {item.details.no_of_sets}
-                </Text>
-                <Text
-                  style={{
-                    ...styles.status,
-                    backgroundColor: statusColor(item.statuses.current),
-                  }}
-                >
-                  {item.statuses.current}
-                </Text>
-              </View>
-            </Pressable>
-          )}
-          keyExtractor={(game) => game.id}
-        />
-      )}
+            </View>
+            <View style={styles.footer}>
+              <Text style={styles.best}>Best of {item.details.no_of_sets}</Text>
+              <Text
+                style={{
+                  ...styles.status,
+                  backgroundColor: statusColor(item.statuses.current),
+                }}
+              >
+                {item.statuses.current}
+              </Text>
+            </View>
+          </Pressable>
+        )}
+        keyExtractor={(game) => game.id}
+      />
     </SafeAreaView>
   )
 }
