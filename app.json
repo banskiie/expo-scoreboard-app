@@ -23,16 +23,27 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.ivansinohon.scoreboardapp"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/icon.png"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "fe6e2527-fbb8-4725-a9cf-0c7559395415"
+      }
     }
   }
 }
