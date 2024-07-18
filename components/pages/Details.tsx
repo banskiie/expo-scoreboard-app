@@ -32,7 +32,6 @@ const Card = ({ title, description }: Card) => {
 
 const Details = ({ id }: any) => {
   const [data, setData] = useState<any>(null)
-  const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [isDoubles, setIsDoubles] = useState<boolean>(false)
   const ref = doc(FIRESTORE_DB, "games", id)
 
@@ -46,12 +45,6 @@ const Details = ({ id }: any) => {
           } else {
             setIsDoubles(false)
           }
-          if (!!snap.time.start) {
-            setIsPlaying(true)
-          } else {
-            setIsPlaying(false)
-          }
-          console.log(snap)
           setData(snap)
         }
       },

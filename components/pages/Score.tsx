@@ -163,14 +163,6 @@ const Score = ({ id }: any) => {
 
   const teamSwitch = data?.sets[`set_${data.details.playing_set}`]?.switch
 
-  // const teamASetWins =
-  //   Object.values(data?.sets).filter((set: any) => set.winner === "a")
-  //     ?.length ?? 0
-
-  // const teamBSetWins =
-  //   Object.values(data?.sets).filter((set: any) => set.winner === "b")
-  //     ?.length ?? 0
-
   const scoreboard = async () => {
     setLoading(true)
     try {
@@ -716,23 +708,6 @@ const Score = ({ id }: any) => {
         <View
           style={{ ...styles.actions, justifyContent: "flex-start", gap: 5 }}
         >
-          <TouchableOpacity
-            style={{
-              ...styles.action_button,
-              backgroundColor: "#c4c4c4",
-            }}
-            onPress={() => router.back()}
-          >
-            <Text
-              style={{
-                textAlign: "center",
-                textTransform: "uppercase",
-                fontWeight: 800,
-              }}
-            >
-              Go back
-            </Text>
-          </TouchableOpacity>
           <Dropdown
             style={styles.set_dropdown}
             selectedTextStyle={{ fontWeight: 800 }}
