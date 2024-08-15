@@ -117,7 +117,7 @@ export default () => {
             style={styles.card}
             onPress={() =>
               router.push({
-                pathname: "score",
+                pathname: "/score",
                 params: {
                   id: item.id,
                 },
