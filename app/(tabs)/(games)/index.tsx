@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore"
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/auth"
+import moment from "moment"
 
 const BACKGROUND_COLOR = "#f2f0ef"
 
@@ -35,8 +36,7 @@ const fetchGames = (
     where("details.court", "==", court ?? ""),
     where("statuses.current", "!=", "finished"),
     orderBy("statuses.current", "asc"),
-    orderBy("time.start", "desc"),
-    orderBy("details.created_date", "asc")
+    orderBy("time.slot", "asc"),
   )
 
   return onSnapshot(q, {
@@ -104,12 +104,12 @@ export default () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.add} onPress={() => router.push("add")}>
+      {/* <TouchableOpacity style={styles.add} onPress={() => router.push("add")}>
         <View style={styles.add_view}>
           <Ionicons style={{ fontSize: 18 }} name="add-circle-outline" />
           <Text style={{ fontWeight: 600, fontSize: 18 }}>New Game</Text>
         </View>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       <FlatList
         data={games}
         renderItem={({ item }) => (
@@ -127,7 +127,8 @@ export default () => {
             <View style={styles.card_header}>
               <Text style={{ textTransform: "uppercase", fontWeight: "bold" }}>
                 {item.details.category.split(".")[0]}{" "}
-                {item.details.category.split(".")[1]}
+                {item.details.category.split(".")[1]} (
+                {moment.unix(item.time.slot).format("MMM D | HH:mm a")})
               </Text>
               <View style={styles.rounds}>
                 {Array.from({ length: item.details.no_of_sets }).map(

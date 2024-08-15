@@ -97,7 +97,8 @@ const Score = ({ id }: any) => {
     data?.players[`team_${player[0]}`][`player_${player[1]}`].use_nickname
       ? data?.players[`team_${player[0]}`][`player_${player[1]}`].nickname
       : `${
-          data?.players[`team_${player[0]}`][`player_${player[1]}`].first_name
+          data?.players[`team_${player[0]}`][`player_${player[1]}`]
+            .first_name[0]
         } ${
           data?.players[`team_${player[0]}`][`player_${player[1]}`].last_name
         }`
@@ -450,6 +451,23 @@ const Score = ({ id }: any) => {
     }
   }
 
+  const shuttle = async (count: number) => {
+    setLoading(true)
+    try {
+      if (data?.details?.shuttles_used <= 0 && count <= -1) return
+      await updateDoc(ref, {
+        details: {
+          ...data?.details,
+          shuttles_used: data?.details?.shuttles_used + count,
+        },
+      })
+    } catch (error: any) {
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const undo = async () => {
     try {
       setLoading(true)
@@ -706,7 +724,7 @@ const Score = ({ id }: any) => {
         style={{ ...styles.score_header, display: isPlaying ? "flex" : "none" }}
       >
         <View
-          style={{ ...styles.actions, justifyContent: "flex-start", gap: 5 }}
+          style={{ ...styles.actions, justifyContent: "space-between", gap: 5 }}
         >
           <Dropdown
             style={styles.set_dropdown}
@@ -756,6 +774,43 @@ const Score = ({ id }: any) => {
                 ).length
               }
             </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              marginRight: 8,
+              alignItems: "center",
+              gap: 3,
+            }}
+          >
+            <TouchableOpacity
+              disabled={loading || !isPlaying}
+              style={{
+                height: "100%",
+                width: 24,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onPress={() => shuttle(-1)}
+            >
+              <Entypo name="circle-with-minus" size={25} color="black" />
+            </TouchableOpacity>
+            <Icon name="badminton" size={25} color="black" />
+            <Text style={{ fontWeight: "900", fontSize: 24 }}>
+              {data?.details.shuttles_used}
+            </Text>
+            <TouchableOpacity
+              disabled={loading || !isPlaying}
+              style={{
+                height: "100%",
+                width: 24,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onPress={() => shuttle(1)}
+            >
+              <Entypo name="circle-with-plus" size={25} color="black" />
+            </TouchableOpacity>
           </View>
         </View>
         <View style={styles.timer_container}>
@@ -1054,28 +1109,30 @@ const Score = ({ id }: any) => {
                         : "Receiver"}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.sr_button}
-                    onPress={
-                      data.sets[`set_${data.details.playing_set}`].scoresheet[0]
-                        .to_serve == ""
-                        ? () => updateInitialServer("a2")
-                        : () => updateInitialReceiver("a2")
-                    }
-                  >
-                    <Text
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 900,
-                        textTransform: "uppercase",
-                      }}
+                  {isDoubles && (
+                    <TouchableOpacity
+                      style={styles.sr_button}
+                      onPress={
+                        data.sets[`set_${data.details.playing_set}`]
+                          .scoresheet[0].to_serve == ""
+                          ? () => updateInitialServer("a2")
+                          : () => updateInitialReceiver("a2")
+                      }
                     >
-                      {data.sets[`set_${data.details.playing_set}`]
-                        .scoresheet[0].to_serve == ""
-                        ? "Server"
-                        : "Receiver"}
-                    </Text>
-                  </TouchableOpacity>
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 900,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {data.sets[`set_${data.details.playing_set}`]
+                          .scoresheet[0].to_serve == ""
+                          ? "Server"
+                          : "Receiver"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
             </View>
@@ -1083,28 +1140,30 @@ const Score = ({ id }: any) => {
               {data.sets[`set_${data.details.playing_set}`].scoresheet[0]
                 .to_serve[0] != "b" && (
                 <>
-                  <TouchableOpacity
-                    style={styles.sr_button}
-                    onPress={
-                      data.sets[`set_${data.details.playing_set}`].scoresheet[0]
-                        .to_serve == ""
-                        ? () => updateInitialServer("b1")
-                        : () => updateInitialReceiver("b1")
-                    }
-                  >
-                    <Text
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 900,
-                        textTransform: "uppercase",
-                      }}
+                  {isDoubles && (
+                    <TouchableOpacity
+                      style={styles.sr_button}
+                      onPress={
+                        data.sets[`set_${data.details.playing_set}`]
+                          .scoresheet[0].to_serve == ""
+                          ? () => updateInitialServer("b1")
+                          : () => updateInitialReceiver("b1")
+                      }
                     >
-                      {data.sets[`set_${data.details.playing_set}`]
-                        .scoresheet[0].to_serve == ""
-                        ? "Server"
-                        : "Receiver"}
-                    </Text>
-                  </TouchableOpacity>
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 900,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {data.sets[`set_${data.details.playing_set}`]
+                          .scoresheet[0].to_serve == ""
+                          ? "Server"
+                          : "Receiver"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={styles.sr_button}
                     onPress={
