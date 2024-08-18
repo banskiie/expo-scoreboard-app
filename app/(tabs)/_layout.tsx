@@ -2,6 +2,7 @@ import { Tabs, usePathname } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { Text, View, StatusBar, StyleSheet } from "react-native"
 import { useEffect, useState } from "react"
+import React from "react"
 
 interface IconWithLabelProps {
   name: any

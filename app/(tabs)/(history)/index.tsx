@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore"
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/auth"
+import React from "react"
 
 const BACKGROUND_COLOR = "#f2f0ef"
 

@@ -29,6 +29,7 @@ import { useForm, Controller } from "react-hook-form"
 import { z } from "zod"
 import BouncyCheckbox from "react-native-bouncy-checkbox"
 import { useAuthStore } from "@/store/auth"
+import React from "react"
 
 const formats: Option[] = [
   { label: "Best of 1", value: 1 },

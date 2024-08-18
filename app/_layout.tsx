@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/store/auth"
 import { Stack, useRouter } from "expo-router"
 import { useEffect } from "react"
+import React from "react"
 
 export default () => {
   const { isAuth } = useAuthStore()

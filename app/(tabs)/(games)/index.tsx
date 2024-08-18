@@ -21,6 +21,7 @@ import {
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/auth"
 import moment from "moment"
+import React from "react"
 
 const BACKGROUND_COLOR = "#f2f0ef"
 
@@ -104,12 +105,12 @@ export default () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <TouchableOpacity style={styles.add} onPress={() => router.push("add")}>
+      <TouchableOpacity style={styles.add} onPress={() => router.push("add")}>
         <View style={styles.add_view}>
           <Ionicons style={{ fontSize: 18 }} name="add-circle-outline" />
           <Text style={{ fontWeight: 600, fontSize: 18 }}>New Game</Text>
         </View>
-      </TouchableOpacity> */}
+      </TouchableOpacity>
       <FlatList
         data={games}
         renderItem={({ item }) => (

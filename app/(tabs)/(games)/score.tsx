@@ -15,6 +15,7 @@ import * as ScreenOrientation from "expo-screen-orientation"
 import { FIRESTORE_DB } from "@/firebase"
 import { doc, onSnapshot, DocumentSnapshot } from "firebase/firestore"
 import Entypo from "@expo/vector-icons/Entypo"
+import React from "react"
 
 export default () => {
   const { id } = useLocalSearchParams()
