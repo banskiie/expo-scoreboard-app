@@ -24,6 +24,7 @@ import {
 } from "firebase/firestore"
 import Entypo from "@expo/vector-icons/Entypo"
 import Icon from "@expo/vector-icons/MaterialCommunityIcons"
+import React from "react"
 
 const DISABLED_BUTTON_COLOR = "#cbcbcb"
 const TEAM_A_COLOR = "#ffd3ac"
@@ -726,33 +727,35 @@ const Score = ({ id }: any) => {
         <View
           style={{ ...styles.actions, justifyContent: "space-between", gap: 5 }}
         >
-          <Dropdown
-            style={styles.set_dropdown}
-            selectedTextStyle={{ fontWeight: 800 }}
-            containerStyle={{ marginTop: -22, borderRadius: 6 }}
-            data={Array.from({
-              length:
-                Object.values(data?.sets).filter(
-                  (set: any) => set.winner === "a"
-                ).length === 2 ||
-                Object.values(data?.sets).filter(
-                  (set: any) => set.winner === "b"
-                ).length === 2
-                  ? Object.values(data?.sets).filter((set: any) => set.winner)
-                      .length
-                  : Object.values(data?.sets).filter((set: any) => set.winner)
-                      .length + 1,
-            }).map((_, index) => ({
-              label: `SET ${index + 1}`,
-              value: index + 1,
-            }))}
-            value={data?.details.playing_set ?? ""}
-            mode="default"
-            labelField="label"
-            valueField="value"
-            placeholder="Select Set"
-            onChange={(item: any) => changeSet(item.value)}
-          />
+          {data?.details?.no_of_sets >= 3 && (
+            <Dropdown
+              style={styles.set_dropdown}
+              selectedTextStyle={{ fontWeight: 800 }}
+              containerStyle={{ marginTop: -22, borderRadius: 6 }}
+              data={Array.from({
+                length:
+                  Object.values(data?.sets).filter(
+                    (set: any) => set.winner === "a"
+                  ).length === 2 ||
+                  Object.values(data?.sets).filter(
+                    (set: any) => set.winner === "b"
+                  ).length === 2
+                    ? Object.values(data?.sets).filter((set: any) => set.winner)
+                        .length
+                    : Object.values(data?.sets).filter((set: any) => set.winner)
+                        .length + 1,
+              }).map((_, index) => ({
+                label: `SET ${index + 1}`,
+                value: index + 1,
+              }))}
+              value={data?.details.playing_set ?? ""}
+              mode="default"
+              labelField="label"
+              valueField="value"
+              placeholder="Select Set"
+              onChange={(item: any) => changeSet(item.value)}
+            />
+          )}
           <View
             style={{
               flexDirection: teamSwitch ? "row-reverse" : "row",
