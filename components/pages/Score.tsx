@@ -611,13 +611,13 @@ const Score = ({ id }: any) => {
 
       switch (receiver) {
         case "a1":
-          next_server = "a2"
+          next_server = isDoubles ? "a2" : "a1"
           break
         case "a2":
           next_server = "a1"
           break
         case "b1":
-          next_server = "b2"
+          next_server = isDoubles ? "b2" : "b1"
           break
         case "b2":
           next_server = "b1"
@@ -1143,14 +1143,36 @@ const Score = ({ id }: any) => {
               {data.sets[`set_${data.details.playing_set}`].scoresheet[0]
                 .to_serve[0] != "b" && (
                 <>
+                  <TouchableOpacity
+                    style={styles.sr_button}
+                    onPress={
+                      data.sets[`set_${data.details.playing_set}`].scoresheet[0]
+                        .to_serve == ""
+                        ? () => updateInitialServer("b1")
+                        : () => updateInitialReceiver("b1")
+                    }
+                  >
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {data.sets[`set_${data.details.playing_set}`]
+                        .scoresheet[0].to_serve == ""
+                        ? "Server"
+                        : "Receiver"}
+                    </Text>
+                  </TouchableOpacity>
                   {isDoubles && (
                     <TouchableOpacity
                       style={styles.sr_button}
                       onPress={
                         data.sets[`set_${data.details.playing_set}`]
                           .scoresheet[0].to_serve == ""
-                          ? () => updateInitialServer("b1")
-                          : () => updateInitialReceiver("b1")
+                          ? () => updateInitialServer("b2")
+                          : () => updateInitialReceiver("b2")
                       }
                     >
                       <Text
@@ -1167,28 +1189,6 @@ const Score = ({ id }: any) => {
                       </Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity
-                    style={styles.sr_button}
-                    onPress={
-                      data.sets[`set_${data.details.playing_set}`].scoresheet[0]
-                        .to_serve == ""
-                        ? () => updateInitialServer("b2")
-                        : () => updateInitialReceiver("b2")
-                    }
-                  >
-                    <Text
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 900,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {data.sets[`set_${data.details.playing_set}`]
-                        .scoresheet[0].to_serve == ""
-                        ? "Server"
-                        : "Receiver"}
-                    </Text>
-                  </TouchableOpacity>
                 </>
               )}
             </View>
@@ -1212,15 +1212,18 @@ const Score = ({ id }: any) => {
             disabled={disablePlayerCheck("a1")}
             onPress={() => score("a1")}
           >
-            <Text
-              style={{
-                position: "absolute",
-                left: 18,
-                fontSize: 20,
-              }}
-            >
-              {playerSwitch("a") ? "L" : "R"}
-            </Text>
+            {isDoubles && (
+              <Text
+                style={{
+                  position: "absolute",
+                  left: 18,
+                  fontSize: 20,
+                }}
+              >
+                {playerSwitch("a") ? "L" : "R"}
+              </Text>
+            )}
+
             <Text style={{ fontSize: 20, fontWeight: 700 }}>
               {fetchPlayerName("a1")}
             </Text>
@@ -1296,15 +1299,18 @@ const Score = ({ id }: any) => {
             disabled={disablePlayerCheck("b1")}
             onPress={() => score("b1")}
           >
-            <Text
-              style={{
-                position: "absolute",
-                left: 18,
-                fontSize: 20,
-              }}
-            >
-              {playerSwitch("b") ? "L" : "R"}
-            </Text>
+            {isDoubles && (
+              <Text
+                style={{
+                  position: "absolute",
+                  left: 18,
+                  fontSize: 20,
+                }}
+              >
+                {playerSwitch("b") ? "L" : "R"}
+              </Text>
+            )}
+
             <Text style={{ fontSize: 20, fontWeight: 700 }}>
               {fetchPlayerName("b1")}
             </Text>
@@ -1334,15 +1340,17 @@ const Score = ({ id }: any) => {
               disabled={disablePlayerCheck("b2")}
               onPress={() => score("b2")}
             >
-              <Text
-                style={{
-                  position: "absolute",
-                  left: 18,
-                  fontSize: 20,
-                }}
-              >
-                {playerSwitch("b") ? "R" : "L"}
-              </Text>
+              {isDoubles && (
+                <Text
+                  style={{
+                    position: "absolute",
+                    left: 18,
+                    fontSize: 20,
+                  }}
+                >
+                  {playerSwitch("b") ? "R" : "L"}
+                </Text>
+              )}
               <Text style={{ fontSize: 20, fontWeight: 700 }}>
                 {fetchPlayerName("b2")}
               </Text>
